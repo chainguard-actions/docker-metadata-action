@@ -1,5 +1,6 @@
 {
   "owner": "docker",
   "name": "metadata-action",
-  "visibility": ""
+  "visibility": "internal",
+  "description": "GitHub Action to extract metadata (tags, labels) from Git reference and GitHub events for Docker"
 }

@@ -1,5 +1,7 @@
 # docker/metadata-action
 
+GitHub Action to extract metadata (tags, labels) from Git reference and GitHub events for Docker
+
 Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at [https://github.com/docker/metadata-action](https://github.com/docker/metadata-action).
 
 ## Versions
