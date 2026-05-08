@@ -1,4 +1,6 @@
 {
-  "upstream": "docker/metadata-action",
-  "version": "v6.0.0"
+  "owner": "docker",
+  "repo": "metadata-action",
+  "version": "",
+  "url": "https://github.com/docker/metadata-action"
 }
