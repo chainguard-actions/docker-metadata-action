@@ -1,0 +1,57 @@
+name: Test tag-names output
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/act-harness
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=ref,event=branch
+      - name: Assert tag-names output is non-empty
+        env:
+          TAG_NAMES: ${{ steps.meta.outputs.tag-names }}
+        run: |
+          echo "tag-names: $TAG_NAMES"
+          if [ -z "$TAG_NAMES" ]; then
+            echo "FAIL: tag-names output should not be empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert tag-names does not contain image base name
+        env:
+          TAG_NAMES: ${{ steps.meta.outputs.tag-names }}
+        run: |
+          echo "tag-names: $TAG_NAMES"
+          if echo "$TAG_NAMES" | grep -q "myorg/myimage"; then
+            echo "FAIL: tag-names should not contain image base name 'myorg/myimage'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert tags output contains image base name
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "tags: $TAGS"
+          if ! echo "$TAGS" | grep -q "myorg/myimage"; then
+            echo "FAIL: tags output should contain image base name 'myorg/myimage'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert tag-names contains branch name
+        env:
+          TAG_NAMES: ${{ steps.meta.outputs.tag-names }}
+        run: |
+          echo "tag-names: $TAG_NAMES"
+          if ! echo "$TAG_NAMES" | grep -q "act-harness"; then
+            echo "FAIL: tag-names should contain branch name 'act-harness'"
+            exit 1
+          fi
+          echo "PASS"

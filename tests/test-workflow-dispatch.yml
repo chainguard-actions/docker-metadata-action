@@ -1,0 +1,57 @@
+name: Test workflow_dispatch event
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/act-harness
+      GITHUB_EVENT_NAME: workflow_dispatch
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=ref,event=branch
+      - name: Assert version output is non-empty
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          echo "version: $VERSION"
+          if [ -z "$VERSION" ]; then
+            echo "FAIL: version output should not be empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert tags output is non-empty
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "tags: $TAGS"
+          if [ -z "$TAGS" ]; then
+            echo "FAIL: tags output should not be empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert tags contain branch name
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "tags: $TAGS"
+          if ! echo "$TAGS" | grep -q "act-harness"; then
+            echo "FAIL: tags should contain branch name 'act-harness'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert labels output is non-empty
+        env:
+          LABELS: ${{ steps.meta.outputs.labels }}
+        run: |
+          echo "labels: $LABELS"
+          if [ -z "$LABELS" ]; then
+            echo "FAIL: labels output should not be empty"
+            exit 1
+          fi
+          echo "PASS"

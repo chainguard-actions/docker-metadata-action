@@ -1,0 +1,41 @@
+name: Test custom separator for tags
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=raw,value=3.1.0
+            type=raw,value=3.1
+          sep-tags: ","
+      - name: Assert tags use comma separator
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "tags: $TAGS"
+          if [ -z "$TAGS" ]; then
+            echo "FAIL: tags output should not be empty"
+            exit 1
+          fi
+          # With comma separator, the output should contain a comma between tags
+          if ! echo "$TAGS" | grep -q ","; then
+            echo "FAIL: tags should use comma as separator"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert version is correct
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          echo "version: $VERSION"
+          if [ "$VERSION" != "3.1.0" ]; then
+            echo "FAIL: expected version '3.1.0', got '$VERSION'"
+            exit 1
+          fi
+          echo "PASS"

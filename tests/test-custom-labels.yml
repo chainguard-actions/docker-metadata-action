@@ -1,0 +1,64 @@
+name: Test custom labels and annotations
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=ref,event=branch
+          labels: |
+            org.opencontainers.image.title=MyApp
+            org.opencontainers.image.description=My custom description
+            custom.label=custom-value
+          annotations: |
+            org.opencontainers.image.title=MyApp
+            custom.annotation=annotation-value
+      - name: Assert labels contain custom label
+        env:
+          LABELS: ${{ steps.meta.outputs.labels }}
+        run: |
+          echo "labels: $LABELS"
+          if ! echo "$LABELS" | grep -q "custom.label=custom-value"; then
+            echo "FAIL: labels should contain 'custom.label=custom-value'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert labels contain custom description
+        env:
+          LABELS: ${{ steps.meta.outputs.labels }}
+        run: |
+          echo "labels: $LABELS"
+          if ! echo "$LABELS" | grep -q "org.opencontainers.image.description=My custom description"; then
+            echo "FAIL: labels should contain custom description"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert annotations are not empty
+        env:
+          ANNOTATIONS: ${{ steps.meta.outputs.annotations }}
+        run: |
+          echo "annotations: $ANNOTATIONS"
+          if [ -z "$ANNOTATIONS" ]; then
+            echo "FAIL: annotations output should not be empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert annotations contain custom annotation
+        env:
+          ANNOTATIONS: ${{ steps.meta.outputs.annotations }}
+        run: |
+          echo "annotations: $ANNOTATIONS"
+          if ! echo "$ANNOTATIONS" | grep -q "custom.annotation=annotation-value"; then
+            echo "FAIL: annotations should contain 'custom.annotation=annotation-value'"
+            exit 1
+          fi
+          echo "PASS"

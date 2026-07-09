@@ -1,0 +1,48 @@
+name: Test annotations output
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          annotations: |
+            org.opencontainers.image.description=My custom description
+            org.opencontainers.image.vendor=MyOrg
+      - name: Assert annotations output is non-empty
+        env:
+          ANNOTATIONS: ${{ steps.meta.outputs.annotations }}
+        run: |
+          echo "annotations: $ANNOTATIONS"
+          if [ -z "$ANNOTATIONS" ]; then
+            echo "FAIL: annotations output should not be empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert annotations contain custom description
+        env:
+          ANNOTATIONS: ${{ steps.meta.outputs.annotations }}
+        run: |
+          echo "annotations: $ANNOTATIONS"
+          if ! echo "$ANNOTATIONS" | grep -q "My custom description"; then
+            echo "FAIL: annotations should contain 'My custom description'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert annotations contain custom vendor
+        env:
+          ANNOTATIONS: ${{ steps.meta.outputs.annotations }}
+        run: |
+          echo "annotations: $ANNOTATIONS"
+          if ! echo "$ANNOTATIONS" | grep -q "MyOrg"; then
+            echo "FAIL: annotations should contain 'MyOrg'"
+            exit 1
+          fi
+          echo "PASS"

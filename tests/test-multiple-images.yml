@@ -1,0 +1,64 @@
+name: Test multiple images
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        uses: .
+        with:
+          images: |
+            myorg/myimage
+            ghcr.io/myorg/myimage
+          tags: |
+            type=ref,event=branch
+            type=sha
+      - name: Assert tags contain first image
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "tags: $TAGS"
+          if ! echo "$TAGS" | grep -q "myorg/myimage"; then
+            echo "FAIL: tags should contain 'myorg/myimage'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert tags contain second image
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "tags: $TAGS"
+          if ! echo "$TAGS" | grep -q "ghcr.io/myorg/myimage"; then
+            echo "FAIL: tags should contain 'ghcr.io/myorg/myimage'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert json contains both images
+        env:
+          JSON: ${{ steps.meta.outputs.json }}
+        run: |
+          echo "json: $JSON"
+          if ! echo "$JSON" | grep -q "myorg/myimage"; then
+            echo "FAIL: json should contain 'myorg/myimage'"
+            exit 1
+          fi
+          if ! echo "$JSON" | grep -q "ghcr.io/myorg/myimage"; then
+            echo "FAIL: json should contain 'ghcr.io/myorg/myimage'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert tag-names output is not empty
+        env:
+          TAG_NAMES: ${{ steps.meta.outputs.tag-names }}
+        run: |
+          echo "tag-names: $TAG_NAMES"
+          if [ -z "$TAG_NAMES" ]; then
+            echo "FAIL: tag-names output should not be empty"
+            exit 1
+          fi
+          echo "PASS"

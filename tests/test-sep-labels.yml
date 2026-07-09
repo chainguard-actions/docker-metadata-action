@@ -1,0 +1,33 @@
+name: Test sep-labels separator
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=raw,value=1.0.0
+          sep-labels: ","
+      - name: Assert labels output uses comma separator
+        env:
+          LABELS: ${{ steps.meta.outputs.labels }}
+        run: |
+          echo "labels: $LABELS"
+          if [ -z "$LABELS" ]; then
+            echo "FAIL: labels output is empty"
+            exit 1
+          fi
+          # With comma separator, output should contain a comma between labels
+          if ! echo "$LABELS" | grep -q ","; then
+            echo "FAIL: labels should use comma as separator"
+            exit 1
+          fi
+          echo "PASS"

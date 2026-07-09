@@ -1,0 +1,36 @@
+name: Test sep-annotations separator
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=raw,value=1.0.0
+          sep-annotations: ","
+          annotations: |
+            org.opencontainers.image.description=My test image
+            org.opencontainers.image.vendor=MyOrg
+      - name: Assert annotations output uses comma separator
+        env:
+          ANNOTATIONS: ${{ steps.meta.outputs.annotations }}
+        run: |
+          echo "annotations: $ANNOTATIONS"
+          if [ -z "$ANNOTATIONS" ]; then
+            echo "FAIL: annotations output is empty"
+            exit 1
+          fi
+          # With comma separator, multiple annotations should be joined by comma
+          if ! echo "$ANNOTATIONS" | grep -q ","; then
+            echo "FAIL: annotations should use comma as separator"
+            exit 1
+          fi
+          echo "PASS"

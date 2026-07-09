@@ -1,0 +1,57 @@
+name: Test JSON output
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          labels: |
+            org.opencontainers.image.title=MyImage
+      - name: Assert json output is non-empty
+        env:
+          JSON: ${{ steps.meta.outputs.json }}
+        run: |
+          echo "json: $JSON"
+          if [ -z "$JSON" ]; then
+            echo "FAIL: json output should not be empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert json output is valid JSON
+        env:
+          JSON: ${{ steps.meta.outputs.json }}
+        run: |
+          echo "json: $JSON"
+          if ! echo "$JSON" | python3 -c "import sys, json; json.load(sys.stdin)" 2>/dev/null; then
+            echo "FAIL: json output is not valid JSON"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert json contains tags key
+        env:
+          JSON: ${{ steps.meta.outputs.json }}
+        run: |
+          echo "json: $JSON"
+          if ! echo "$JSON" | python3 -c "import sys, json; d=json.load(sys.stdin); assert 'tags' in d" 2>/dev/null; then
+            echo "FAIL: json output should contain 'tags' key"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert json contains labels key
+        env:
+          JSON: ${{ steps.meta.outputs.json }}
+        run: |
+          echo "json: $JSON"
+          if ! echo "$JSON" | python3 -c "import sys, json; d=json.load(sys.stdin); assert 'labels' in d" 2>/dev/null; then
+            echo "FAIL: json output should contain 'labels' key"
+            exit 1
+          fi
+          echo "PASS"

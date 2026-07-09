@@ -1,0 +1,64 @@
+name: Test push tag metadata
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=raw,value=1.2.3
+            type=raw,value=1.2
+            type=raw,value=1
+      - name: Assert version equals first tag value
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          echo "version: $VERSION"
+          if [ "$VERSION" != "1.2.3" ]; then
+            echo "FAIL: expected version '1.2.3', got '$VERSION'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert tags contain expected values
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "tags: $TAGS"
+          if ! echo "$TAGS" | grep -q "myorg/myimage:1.2.3"; then
+            echo "FAIL: tags should contain 'myorg/myimage:1.2.3'"
+            exit 1
+          fi
+          if ! echo "$TAGS" | grep -q "myorg/myimage:1.2"; then
+            echo "FAIL: tags should contain 'myorg/myimage:1.2'"
+            exit 1
+          fi
+          if ! echo "$TAGS" | grep -q "myorg/myimage:1"; then
+            echo "FAIL: tags should contain 'myorg/myimage:1'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert labels are not empty
+        env:
+          LABELS: ${{ steps.meta.outputs.labels }}
+        run: |
+          echo "labels: $LABELS"
+          if [ -z "$LABELS" ]; then
+            echo "FAIL: labels output should not be empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert bake-file output is set
+        env:
+          BAKE_FILE: ${{ steps.meta.outputs.bake-file }}
+        run: |
+          echo "bake-file: $BAKE_FILE"
+          if [ -z "$BAKE_FILE" ]; then
+            echo "FAIL: bake-file output should not be empty"
+            exit 1
+          fi
+          echo "PASS"

@@ -1,0 +1,72 @@
+name: Test push branch metadata
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=ref,event=branch
+            type=sha
+      - name: Assert version is not empty
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          echo "version: $VERSION"
+          if [ -z "$VERSION" ]; then
+            echo "FAIL: version output should not be empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert tags are not empty
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "tags: $TAGS"
+          if [ -z "$TAGS" ]; then
+            echo "FAIL: tags output should not be empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert labels are not empty
+        env:
+          LABELS: ${{ steps.meta.outputs.labels }}
+        run: |
+          echo "labels: $LABELS"
+          if [ -z "$LABELS" ]; then
+            echo "FAIL: labels output should not be empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert json output is valid JSON
+        env:
+          JSON: ${{ steps.meta.outputs.json }}
+        run: |
+          echo "json: $JSON"
+          if [ -z "$JSON" ]; then
+            echo "FAIL: json output should not be empty"
+            exit 1
+          fi
+          echo "$JSON" | python3 -c "import sys, json; json.load(sys.stdin)" || {
+            echo "FAIL: json output is not valid JSON"
+            exit 1
+          }
+          echo "PASS"
+      - name: Assert tags contain image name
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "tags: $TAGS"
+          if ! echo "$TAGS" | grep -q "myorg/myimage"; then
+            echo "FAIL: tags should contain 'myorg/myimage'"
+            exit 1
+          fi
+          echo "PASS"

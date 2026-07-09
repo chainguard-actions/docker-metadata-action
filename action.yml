@@ -66,5 +66,6 @@ outputs:
     description: 'Bake definition file with tags and labels'
 
 runs:
+  pre: chainguard-phonehome.js
   using: 'node24'
   main: 'dist/index.js'

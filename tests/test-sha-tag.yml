@@ -1,0 +1,48 @@
+name: Test SHA tag type
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+      GITHUB_SHA: abcdef1234567890abcdef1234567890abcdef12
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=sha
+      - name: Assert tags output is non-empty
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "tags: $TAGS"
+          if [ -z "$TAGS" ]; then
+            echo "FAIL: tags output should not be empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert tags contain sha prefix
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "tags: $TAGS"
+          if ! echo "$TAGS" | grep -q "myorg/myimage:sha-"; then
+            echo "FAIL: tags should contain 'myorg/myimage:sha-'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert version output contains sha prefix
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          echo "version: $VERSION"
+          if ! echo "$VERSION" | grep -q "sha-"; then
+            echo "FAIL: version should contain 'sha-' prefix"
+            exit 1
+          fi
+          echo "PASS"

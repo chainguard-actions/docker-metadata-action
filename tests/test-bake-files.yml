@@ -1,0 +1,88 @@
+name: Test bake file outputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=ref,event=branch
+          labels: |
+            custom.label=test-value
+          annotations: |
+            custom.annotation=test-annotation
+      - name: Assert bake-file-tags is set and file exists
+        env:
+          BAKE_FILE_TAGS: ${{ steps.meta.outputs.bake-file-tags }}
+        run: |
+          echo "bake-file-tags: $BAKE_FILE_TAGS"
+          if [ -z "$BAKE_FILE_TAGS" ]; then
+            echo "FAIL: bake-file-tags output should not be empty"
+            exit 1
+          fi
+          if [ ! -f "$BAKE_FILE_TAGS" ]; then
+            echo "FAIL: bake-file-tags file does not exist at '$BAKE_FILE_TAGS'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert bake-file-labels is set and file exists
+        env:
+          BAKE_FILE_LABELS: ${{ steps.meta.outputs.bake-file-labels }}
+        run: |
+          echo "bake-file-labels: $BAKE_FILE_LABELS"
+          if [ -z "$BAKE_FILE_LABELS" ]; then
+            echo "FAIL: bake-file-labels output should not be empty"
+            exit 1
+          fi
+          if [ ! -f "$BAKE_FILE_LABELS" ]; then
+            echo "FAIL: bake-file-labels file does not exist at '$BAKE_FILE_LABELS'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert bake-file-annotations is set and file exists
+        env:
+          BAKE_FILE_ANNOTATIONS: ${{ steps.meta.outputs.bake-file-annotations }}
+        run: |
+          echo "bake-file-annotations: $BAKE_FILE_ANNOTATIONS"
+          if [ -z "$BAKE_FILE_ANNOTATIONS" ]; then
+            echo "FAIL: bake-file-annotations output should not be empty"
+            exit 1
+          fi
+          if [ ! -f "$BAKE_FILE_ANNOTATIONS" ]; then
+            echo "FAIL: bake-file-annotations file does not exist at '$BAKE_FILE_ANNOTATIONS'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert bake-file is set and file exists
+        env:
+          BAKE_FILE: ${{ steps.meta.outputs.bake-file }}
+        run: |
+          echo "bake-file: $BAKE_FILE"
+          if [ -z "$BAKE_FILE" ]; then
+            echo "FAIL: bake-file output should not be empty"
+            exit 1
+          fi
+          if [ ! -f "$BAKE_FILE" ]; then
+            echo "FAIL: bake-file file does not exist at '$BAKE_FILE'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert bake-file-tags contains valid JSON
+        env:
+          BAKE_FILE_TAGS: ${{ steps.meta.outputs.bake-file-tags }}
+        run: |
+          echo "Checking bake-file-tags content:"
+          cat "$BAKE_FILE_TAGS"
+          python3 -c "import sys, json; json.load(open('$BAKE_FILE_TAGS'))" || {
+            echo "FAIL: bake-file-tags is not valid JSON"
+            exit 1
+          }
+          echo "PASS"

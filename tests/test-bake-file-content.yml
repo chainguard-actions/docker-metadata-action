@@ -1,0 +1,64 @@
+name: Test bake file content
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=ref,event=branch
+          labels: |
+            org.opencontainers.image.title=BakeTest
+      - name: Assert bake-file output is non-empty
+        env:
+          BAKE_FILE: ${{ steps.meta.outputs.bake-file }}
+        run: |
+          echo "bake-file: $BAKE_FILE"
+          if [ -z "$BAKE_FILE" ]; then
+            echo "FAIL: bake-file output should not be empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert bake-file-tags output is non-empty
+        env:
+          BAKE_FILE_TAGS: ${{ steps.meta.outputs.bake-file-tags }}
+        run: |
+          echo "bake-file-tags: $BAKE_FILE_TAGS"
+          if [ -z "$BAKE_FILE_TAGS" ]; then
+            echo "FAIL: bake-file-tags output should not be empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert bake-file-labels output is non-empty
+        env:
+          BAKE_FILE_LABELS: ${{ steps.meta.outputs.bake-file-labels }}
+        run: |
+          echo "bake-file-labels: $BAKE_FILE_LABELS"
+          if [ -z "$BAKE_FILE_LABELS" ]; then
+            echo "FAIL: bake-file-labels output should not be empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert bake-file exists on disk and contains tags
+        env:
+          BAKE_FILE: ${{ steps.meta.outputs.bake-file }}
+        run: |
+          echo "bake-file path: $BAKE_FILE"
+          if [ ! -f "$BAKE_FILE" ]; then
+            echo "FAIL: bake-file path '$BAKE_FILE' does not exist on disk"
+            exit 1
+          fi
+          cat "$BAKE_FILE"
+          if ! grep -q "myorg/myimage" "$BAKE_FILE"; then
+            echo "FAIL: bake-file should contain 'myorg/myimage'"
+            exit 1
+          fi
+          echo "PASS"
