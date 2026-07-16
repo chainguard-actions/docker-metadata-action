@@ -1,0 +1,69 @@
+name: Test git context metadata
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: meta
+        uses: .
+        with:
+          context: git
+          images: myorg/myimage
+          tags: |
+            type=ref,event=branch
+            type=sha
+
+      - name: Assert version output is set
+        env:
+          ACTUAL: ${{ steps.meta.outputs.version }}
+        run: |
+          echo "actual version: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: version output is empty"
+            exit 1
+          fi
+          echo "PASS: version=$ACTUAL"
+
+      - name: Assert tags output is set
+        env:
+          ACTUAL: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "actual tags: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: tags output is empty"
+            exit 1
+          fi
+          if ! echo "$ACTUAL" | grep -q "myorg/myimage"; then
+            echo "FAIL: tags does not contain 'myorg/myimage'"
+            exit 1
+          fi
+          echo "PASS: tags=$ACTUAL"
+
+      - name: Assert labels output is set
+        env:
+          ACTUAL: ${{ steps.meta.outputs.labels }}
+        run: |
+          echo "actual labels: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: labels output is empty"
+            exit 1
+          fi
+          echo "PASS: labels=$ACTUAL"
+
+      - name: Assert json output is valid
+        env:
+          ACTUAL: ${{ steps.meta.outputs.json }}
+        run: |
+          echo "actual json: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: json output is empty"
+            exit 1
+          fi
+          echo "$ACTUAL" | python3 -c "import sys, json; json.load(sys.stdin)" || {
+            echo "FAIL: json output is not valid JSON"
+            exit 1
+          }
+          echo "PASS: json is valid"

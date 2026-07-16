@@ -1,0 +1,63 @@
+name: Test custom separator for outputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+      GITHUB_SHA: 266574110acf203503badf966df2ea24b5d732d7
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: meta
+        uses: .
+        with:
+          images: |
+            myorg/myimage
+            ghcr.io/myorg/myimage
+          tags: |
+            type=ref,event=branch
+            type=sha
+          sep-tags: ","
+          sep-labels: ","
+
+      - name: Assert tags use comma separator
+        env:
+          ACTUAL: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "actual tags: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: tags output is empty"
+            exit 1
+          fi
+          # With comma separator and multiple images/tags, there should be commas
+          if ! echo "$ACTUAL" | grep -q ","; then
+            echo "FAIL: tags output does not contain comma separator"
+            exit 1
+          fi
+          # Count commas - with 2 images and 2 tag types, expect at least 1 comma
+          COMMA_COUNT=$(echo "$ACTUAL" | tr -cd ',' | wc -c)
+          echo "comma count: $COMMA_COUNT"
+          if [ "$COMMA_COUNT" -lt 1 ]; then
+            echo "FAIL: expected at least 1 comma in tags output"
+            exit 1
+          fi
+          echo "PASS: tags use comma separator"
+
+      - name: Assert labels use comma separator
+        env:
+          ACTUAL: ${{ steps.meta.outputs.labels }}
+        run: |
+          echo "actual labels: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: labels output is empty"
+            exit 1
+          fi
+          # Labels should use comma separator
+          if ! echo "$ACTUAL" | grep -q ","; then
+            echo "FAIL: labels output does not contain comma separator"
+            exit 1
+          fi
+          echo "PASS: labels use comma separator"

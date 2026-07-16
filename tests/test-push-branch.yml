@@ -1,0 +1,72 @@
+name: Test push branch metadata
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+      GITHUB_SHA: 266574110acf203503badf966df2ea24b5d732d7
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=ref,event=branch
+
+      - name: Assert version output is set
+        env:
+          ACTUAL: ${{ steps.meta.outputs.version }}
+        run: |
+          echo "actual version: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: version output is empty"
+            exit 1
+          fi
+          echo "PASS: version=$ACTUAL"
+
+      - name: Assert tags output contains image name
+        env:
+          ACTUAL: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "actual tags: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: tags output is empty"
+            exit 1
+          fi
+          if ! echo "$ACTUAL" | grep -q "myorg/myimage"; then
+            echo "FAIL: tags does not contain 'myorg/myimage'"
+            exit 1
+          fi
+          echo "PASS: tags=$ACTUAL"
+
+      - name: Assert labels output is set
+        env:
+          ACTUAL: ${{ steps.meta.outputs.labels }}
+        run: |
+          echo "actual labels: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: labels output is empty"
+            exit 1
+          fi
+          echo "PASS: labels=$ACTUAL"
+
+      - name: Assert json output is set
+        env:
+          ACTUAL: ${{ steps.meta.outputs.json }}
+        run: |
+          echo "actual json: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: json output is empty"
+            exit 1
+          fi
+          # Validate it's valid JSON
+          echo "$ACTUAL" | python3 -c "import sys, json; json.load(sys.stdin)" || {
+            echo "FAIL: json output is not valid JSON"
+            exit 1
+          }
+          echo "PASS: json is valid"

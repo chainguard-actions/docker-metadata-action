@@ -1,0 +1,78 @@
+name: Test push tag semver metadata
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/tags/v1.2.3
+      GITHUB_EVENT_NAME: push
+      GITHUB_SHA: 860c1904a1ce19322e91ac35af1ab07466440c37
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=semver,pattern={{version}},value=v1.2.3
+            type=semver,pattern={{major}}.{{minor}},value=v1.2.3
+            type=semver,pattern={{major}},value=v1.2.3
+
+      - name: Assert version output is semver
+        env:
+          ACTUAL: ${{ steps.meta.outputs.version }}
+        run: |
+          echo "actual version: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: version output is empty"
+            exit 1
+          fi
+          if ! echo "$ACTUAL" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "FAIL: version '$ACTUAL' does not match semver pattern"
+            exit 1
+          fi
+          echo "PASS: version=$ACTUAL"
+
+      - name: Assert tags contain semver variants
+        env:
+          ACTUAL: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "actual tags: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: tags output is empty"
+            exit 1
+          fi
+          # Should contain full semver tag
+          if ! echo "$ACTUAL" | grep -q "myorg/myimage:1.2.3"; then
+            echo "FAIL: tags does not contain 'myorg/myimage:1.2.3'"
+            exit 1
+          fi
+          # Should contain major.minor tag
+          if ! echo "$ACTUAL" | grep -q "myorg/myimage:1.2"; then
+            echo "FAIL: tags does not contain 'myorg/myimage:1.2'"
+            exit 1
+          fi
+          # Should contain major tag
+          if ! echo "$ACTUAL" | grep -q "myorg/myimage:1"; then
+            echo "FAIL: tags does not contain 'myorg/myimage:1'"
+            exit 1
+          fi
+          echo "PASS: tags=$ACTUAL"
+
+      - name: Assert tag-names output is set
+        env:
+          ACTUAL: ${{ steps.meta.outputs.tag-names }}
+        run: |
+          echo "actual tag-names: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: tag-names output is empty"
+            exit 1
+          fi
+          # tag-names should not contain the image base name
+          if echo "$ACTUAL" | grep -q "myorg/myimage"; then
+            echo "FAIL: tag-names should not contain image base name 'myorg/myimage'"
+            exit 1
+          fi
+          echo "PASS: tag-names=$ACTUAL"
