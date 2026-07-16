@@ -9,6 +9,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | Version | Tag | Upstream commit |
 |---------|-----|-----------------|
 | v6.0.0 | [`v6.0.0`](https://github.com/chainguard-actions/docker-metadata-action/tree/v6.0.0) | — |
+| v6.1.0 | [`v6.1.0`](https://github.com/chainguard-actions/docker-metadata-action/tree/v6.1.0) | [`80c7e94`](https://github.com/docker/metadata-action/commit/80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9) |
 
 ## Privacy
 
