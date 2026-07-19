@@ -1,0 +1,41 @@
+name: Test bake-target input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          bake-target: my-custom-target
+          tags: |
+            type=raw,value=latest
+      - name: Assert bake-file-tags references custom target
+        env:
+          BAKE_FILE: ${{ steps.meta.outputs.bake-file-tags }}
+        run: |
+          echo "bake-file-tags: $BAKE_FILE"
+          if [ -z "$BAKE_FILE" ]; then
+            echo "FAIL: bake-file-tags output is empty"
+            exit 1
+          fi
+          CONTENT=$(cat "$BAKE_FILE")
+          echo "bake file content: $CONTENT"
+          if ! echo "$CONTENT" | grep -q "my-custom-target"; then
+            echo "FAIL: expected bake file to contain 'my-custom-target'"
+            exit 1
+          fi
+          echo "PASS: bake-file-tags contains custom target name"
+      - name: Assert tags output is non-empty
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "tags: $TAGS"
+          if [ -z "$TAGS" ]; then
+            echo "FAIL: tags output is empty"
+            exit 1
+          fi
+          echo "PASS"

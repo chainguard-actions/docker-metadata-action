@@ -1,0 +1,33 @@
+name: Test sep-annotations input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=raw,value=latest
+          annotations: |
+            org.opencontainers.image.title=MyApp
+            org.opencontainers.image.description=My application
+          sep-annotations: ","
+      - name: Assert annotations output uses comma separator
+        env:
+          ANNOTATIONS: ${{ steps.meta.outputs.annotations }}
+        run: |
+          echo "annotations: $ANNOTATIONS"
+          if [ -z "$ANNOTATIONS" ]; then
+            echo "FAIL: annotations output is empty"
+            exit 1
+          fi
+          # With comma separator, the output should contain a comma between annotations
+          if ! echo "$ANNOTATIONS" | grep -q ","; then
+            echo "FAIL: expected annotations to be comma-separated but got: $ANNOTATIONS"
+            exit 1
+          fi
+          echo "PASS: annotations output uses comma separator"

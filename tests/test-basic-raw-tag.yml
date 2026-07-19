@@ -1,0 +1,54 @@
+name: Test basic raw tag
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=raw,value=latest
+      - name: Assert version output
+        env:
+          ACTUAL: ${{ steps.meta.outputs.version }}
+        run: |
+          echo "actual version: $ACTUAL"
+          if [ "$ACTUAL" != "latest" ]; then
+            echo "FAIL: expected version 'latest', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert tags output contains image with tag
+        env:
+          ACTUAL: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "actual tags: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "myorg/myimage:latest"; then
+            echo "FAIL: expected tags to contain 'myorg/myimage:latest'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert labels output is non-empty
+        env:
+          ACTUAL: ${{ steps.meta.outputs.labels }}
+        run: |
+          echo "actual labels: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected labels to be non-empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert json output is valid JSON
+        env:
+          ACTUAL: ${{ steps.meta.outputs.json }}
+        run: |
+          echo "actual json: $ACTUAL"
+          if ! echo "$ACTUAL" | python3 -c "import sys, json; json.load(sys.stdin)" 2>/dev/null; then
+            echo "FAIL: json output is not valid JSON"
+            exit 1
+          fi
+          echo "PASS"

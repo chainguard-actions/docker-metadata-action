@@ -1,0 +1,56 @@
+name: Test semver tag with explicit value
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=semver,pattern={{version}},value=v1.2.3
+            type=semver,pattern={{major}}.{{minor}},value=v1.2.3
+            type=semver,pattern={{major}},value=v1.2.3
+      - name: Assert version output is 1.2.3
+        env:
+          ACTUAL: ${{ steps.meta.outputs.version }}
+        run: |
+          echo "actual version: $ACTUAL"
+          if [ "$ACTUAL" != "1.2.3" ]; then
+            echo "FAIL: expected version '1.2.3', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert tags contain full semver
+        env:
+          ACTUAL: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "actual tags: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "myorg/myimage:1.2.3"; then
+            echo "FAIL: expected tags to contain 'myorg/myimage:1.2.3'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert tags contain major.minor
+        env:
+          ACTUAL: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "actual tags: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "myorg/myimage:1.2"; then
+            echo "FAIL: expected tags to contain 'myorg/myimage:1.2'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert tags contain major only
+        env:
+          ACTUAL: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "actual tags: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "myorg/myimage:1"; then
+            echo "FAIL: expected tags to contain 'myorg/myimage:1'"
+            exit 1
+          fi
+          echo "PASS"

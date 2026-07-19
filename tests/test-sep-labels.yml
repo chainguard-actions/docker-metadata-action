@@ -1,0 +1,33 @@
+name: Test sep-labels input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=raw,value=latest
+          labels: |
+            org.opencontainers.image.title=MyApp
+            org.opencontainers.image.description=My application
+          sep-labels: ","
+      - name: Assert labels output uses comma separator
+        env:
+          LABELS: ${{ steps.meta.outputs.labels }}
+        run: |
+          echo "labels: $LABELS"
+          if [ -z "$LABELS" ]; then
+            echo "FAIL: labels output is empty"
+            exit 1
+          fi
+          # With comma separator, the output should contain a comma between labels
+          if ! echo "$LABELS" | grep -q ","; then
+            echo "FAIL: expected labels to be comma-separated but got: $LABELS"
+            exit 1
+          fi
+          echo "PASS: labels output uses comma separator"

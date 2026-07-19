@@ -1,16 +1,11 @@
-name: Test multiple images metadata
+name: Test multiple images
 on:
   workflow_dispatch:
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_REF: refs/heads/main
-      GITHUB_EVENT_NAME: push
-      GITHUB_SHA: 266574110acf203503badf966df2ea24b5d732d7
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
       - id: meta
         uses: .
         with:
@@ -18,63 +13,44 @@ jobs:
             myorg/myimage
             ghcr.io/myorg/myimage
           tags: |
-            type=ref,event=branch
-            type=sha
-
-      - name: Assert tags contain both image registries
+            type=raw,value=stable
+      - name: Assert tags contain first image
         env:
           ACTUAL: ${{ steps.meta.outputs.tags }}
         run: |
           echo "actual tags: $ACTUAL"
-          if [ -z "$ACTUAL" ]; then
-            echo "FAIL: tags output is empty"
+          if ! echo "$ACTUAL" | grep -q "myorg/myimage:stable"; then
+            echo "FAIL: expected tags to contain 'myorg/myimage:stable'"
             exit 1
           fi
-          if ! echo "$ACTUAL" | grep -q "myorg/myimage"; then
-            echo "FAIL: tags does not contain 'myorg/myimage'"
-            exit 1
-          fi
-          if ! echo "$ACTUAL" | grep -q "ghcr.io/myorg/myimage"; then
-            echo "FAIL: tags does not contain 'ghcr.io/myorg/myimage'"
-            exit 1
-          fi
-          echo "PASS: both image registries present in tags"
-
-      - name: Assert sha tag is present
+          echo "PASS"
+      - name: Assert tags contain second image (ghcr.io)
         env:
           ACTUAL: ${{ steps.meta.outputs.tags }}
         run: |
           echo "actual tags: $ACTUAL"
-          # SHA tags look like sha-<short-sha>
-          if ! echo "$ACTUAL" | grep -qE "sha-[0-9a-f]+"; then
-            echo "FAIL: tags does not contain sha tag"
+          if ! echo "$ACTUAL" | grep -q "ghcr.io/myorg/myimage:stable"; then
+            echo "FAIL: expected tags to contain 'ghcr.io/myorg/myimage:stable'"
             exit 1
           fi
-          echo "PASS: sha tag present"
-
-      - name: Assert version output is set
+          echo "PASS"
+      - name: Assert version output
         env:
           ACTUAL: ${{ steps.meta.outputs.version }}
         run: |
           echo "actual version: $ACTUAL"
-          if [ -z "$ACTUAL" ]; then
-            echo "FAIL: version output is empty"
+          if [ "$ACTUAL" != "stable" ]; then
+            echo "FAIL: expected version 'stable', got '$ACTUAL'"
             exit 1
           fi
-          echo "PASS: version=$ACTUAL"
-
-      - name: Assert bake-file output is set
+          echo "PASS"
+      - name: Assert tag-names output contains tag without image prefix
         env:
-          ACTUAL: ${{ steps.meta.outputs.bake-file }}
+          ACTUAL: ${{ steps.meta.outputs.tag-names }}
         run: |
-          echo "actual bake-file: $ACTUAL"
-          if [ -z "$ACTUAL" ]; then
-            echo "FAIL: bake-file output is empty"
+          echo "actual tag-names: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "stable"; then
+            echo "FAIL: expected tag-names to contain 'stable'"
             exit 1
           fi
-          # bake-file should be a path to an existing file
-          if [ ! -f "$ACTUAL" ]; then
-            echo "FAIL: bake-file path '$ACTUAL' does not point to an existing file"
-            exit 1
-          fi
-          echo "PASS: bake-file=$ACTUAL"
+          echo "PASS"

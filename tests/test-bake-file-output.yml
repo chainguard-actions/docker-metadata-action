@@ -1,0 +1,69 @@
+name: Test bake file output
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=raw,value=bake-test
+      - name: Assert bake-file output is set
+        env:
+          ACTUAL: ${{ steps.meta.outputs.bake-file }}
+        run: |
+          echo "actual bake-file: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected bake-file output to be non-empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert bake-file-tags output is set
+        env:
+          ACTUAL: ${{ steps.meta.outputs.bake-file-tags }}
+        run: |
+          echo "actual bake-file-tags: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected bake-file-tags output to be non-empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert bake-file-labels output is set
+        env:
+          ACTUAL: ${{ steps.meta.outputs.bake-file-labels }}
+        run: |
+          echo "actual bake-file-labels: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected bake-file-labels output to be non-empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert bake file exists on disk and contains valid JSON
+        env:
+          BAKE_FILE: ${{ steps.meta.outputs.bake-file }}
+        run: |
+          echo "bake file path: $BAKE_FILE"
+          if [ ! -f "$BAKE_FILE" ]; then
+            echo "FAIL: bake file does not exist at path '$BAKE_FILE'"
+            exit 1
+          fi
+          if ! python3 -c "import sys, json; json.load(open('$BAKE_FILE'))" 2>/dev/null; then
+            echo "FAIL: bake file is not valid JSON"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert bake file contains expected tag
+        env:
+          BAKE_FILE: ${{ steps.meta.outputs.bake-file }}
+        run: |
+          echo "bake file path: $BAKE_FILE"
+          if ! grep -q "myorg/myimage:bake-test" "$BAKE_FILE"; then
+            echo "FAIL: bake file does not contain 'myorg/myimage:bake-test'"
+            cat "$BAKE_FILE"
+            exit 1
+          fi
+          echo "PASS"

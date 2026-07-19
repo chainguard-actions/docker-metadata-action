@@ -1,0 +1,50 @@
+name: Test flavor latest tag control
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Test with latest=false: should NOT add a 'latest' tag
+      - id: meta-no-latest
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=raw,value=1.0.0
+          flavor: |
+            latest=false
+
+      - name: Assert no latest tag when latest=false
+        env:
+          ACTUAL: ${{ steps.meta-no-latest.outputs.tags }}
+        run: |
+          echo "actual tags: $ACTUAL"
+          if echo "$ACTUAL" | grep -q "myorg/myimage:latest"; then
+            echo "FAIL: expected no 'latest' tag but found one"
+            exit 1
+          fi
+          echo "PASS: no latest tag as expected"
+
+      # Test with latest=true: should add a 'latest' tag
+      - id: meta-with-latest
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=raw,value=1.0.0
+          flavor: |
+            latest=true
+
+      - name: Assert latest tag present when latest=true
+        env:
+          ACTUAL: ${{ steps.meta-with-latest.outputs.tags }}
+        run: |
+          echo "actual tags: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "myorg/myimage:latest"; then
+            echo "FAIL: expected 'latest' tag but not found"
+            exit 1
+          fi
+          echo "PASS: latest tag present as expected"

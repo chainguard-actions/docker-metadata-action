@@ -1,0 +1,57 @@
+name: Test custom annotations
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=raw,value=annotated
+          annotations: |
+            org.opencontainers.image.title=Annotated Image
+            org.opencontainers.image.vendor=MyOrg
+      - name: Assert annotations output is non-empty
+        env:
+          ACTUAL: ${{ steps.meta.outputs.annotations }}
+        run: |
+          echo "actual annotations: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected annotations output to be non-empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert annotations contain title
+        env:
+          ACTUAL: ${{ steps.meta.outputs.annotations }}
+        run: |
+          echo "actual annotations: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "org.opencontainers.image.title=Annotated Image"; then
+            echo "FAIL: expected annotation 'org.opencontainers.image.title=Annotated Image' not found"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert annotations contain vendor
+        env:
+          ACTUAL: ${{ steps.meta.outputs.annotations }}
+        run: |
+          echo "actual annotations: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "org.opencontainers.image.vendor=MyOrg"; then
+            echo "FAIL: expected annotation 'org.opencontainers.image.vendor=MyOrg' not found"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert bake-file-annotations output is set
+        env:
+          ACTUAL: ${{ steps.meta.outputs.bake-file-annotations }}
+        run: |
+          echo "actual bake-file-annotations: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected bake-file-annotations output to be non-empty"
+            exit 1
+          fi
+          echo "PASS"

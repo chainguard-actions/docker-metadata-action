@@ -1,0 +1,37 @@
+name: Test flavor prefix and suffix
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=raw,value=1.0.0
+          flavor: |
+            prefix=arm-
+            suffix=-alpine
+      - name: Assert version has prefix and suffix
+        env:
+          ACTUAL: ${{ steps.meta.outputs.version }}
+        run: |
+          echo "actual version: $ACTUAL"
+          if [ "$ACTUAL" != "arm-1.0.0-alpine" ]; then
+            echo "FAIL: expected version 'arm-1.0.0-alpine', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert tags contain prefixed and suffixed tag
+        env:
+          ACTUAL: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "actual tags: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "myorg/myimage:arm-1.0.0-alpine"; then
+            echo "FAIL: expected tags to contain 'myorg/myimage:arm-1.0.0-alpine'"
+            exit 1
+          fi
+          echo "PASS"

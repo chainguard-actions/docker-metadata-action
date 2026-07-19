@@ -364,16 +364,18 @@ jobs:
       -
         name: Inspect image
         env:
+          DOCKER_IMAGE_REF: ${{ env.DOCKER_IMAGE }}
           DOCKER_META_VERSION: ${{ steps.docker_meta.outputs.version }}
         run: |
-          docker pull "$DOCKER_IMAGE:$DOCKER_META_VERSION"
-          docker image inspect "$DOCKER_IMAGE:$DOCKER_META_VERSION"
+          docker pull "$DOCKER_IMAGE_REF:$DOCKER_META_VERSION"
+          docker image inspect "$DOCKER_IMAGE_REF:$DOCKER_META_VERSION"
       -
         name: Check manifest
         env:
+          DOCKER_IMAGE_REF: ${{ env.DOCKER_IMAGE }}
           DOCKER_META_VERSION: ${{ steps.docker_meta.outputs.version }}
         run: |
-          docker buildx imagetools inspect "$DOCKER_IMAGE:$DOCKER_META_VERSION"
+          docker buildx imagetools inspect "$DOCKER_IMAGE_REF:$DOCKER_META_VERSION"
 
   bake:
     runs-on: ubuntu-latest
