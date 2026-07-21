@@ -1,0 +1,86 @@
+name: Test basic usage
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=raw,value=latest
+
+      - name: Assert version output
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          echo "version: $VERSION"
+          if [ -z "$VERSION" ]; then
+            echo "FAIL: version output is empty"
+            exit 1
+          fi
+          echo "PASS: version=$VERSION"
+
+      - name: Assert tags output contains image
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "tags: $TAGS"
+          if [ -z "$TAGS" ]; then
+            echo "FAIL: tags output is empty"
+            exit 1
+          fi
+          if ! echo "$TAGS" | grep -q "myorg/myimage"; then
+            echo "FAIL: tags does not contain 'myorg/myimage'"
+            exit 1
+          fi
+          if ! echo "$TAGS" | grep -q "latest"; then
+            echo "FAIL: tags does not contain 'latest'"
+            exit 1
+          fi
+          echo "PASS: tags=$TAGS"
+
+      - name: Assert labels output is non-empty
+        env:
+          LABELS: ${{ steps.meta.outputs.labels }}
+        run: |
+          echo "labels: $LABELS"
+          if [ -z "$LABELS" ]; then
+            echo "FAIL: labels output is empty"
+            exit 1
+          fi
+          echo "PASS: labels present"
+
+      - name: Assert bake-file output is set
+        env:
+          BAKE_FILE: ${{ steps.meta.outputs.bake-file }}
+        run: |
+          echo "bake-file: $BAKE_FILE"
+          if [ -z "$BAKE_FILE" ]; then
+            echo "FAIL: bake-file output is empty"
+            exit 1
+          fi
+          if [ ! -f "$BAKE_FILE" ]; then
+            echo "FAIL: bake-file path does not exist: $BAKE_FILE"
+            exit 1
+          fi
+          echo "PASS: bake-file=$BAKE_FILE"
+
+      - name: Assert json output is valid JSON
+        env:
+          JSON_OUT: ${{ steps.meta.outputs.json }}
+        run: |
+          echo "json: $JSON_OUT"
+          if [ -z "$JSON_OUT" ]; then
+            echo "FAIL: json output is empty"
+            exit 1
+          fi
+          echo "$JSON_OUT" | python3 -m json.tool > /dev/null || {
+            echo "FAIL: json output is not valid JSON"
+            exit 1
+          }
+          echo "PASS: json is valid"

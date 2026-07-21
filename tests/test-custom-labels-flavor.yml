@@ -1,0 +1,73 @@
+name: Test custom labels and flavor
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=raw,value=myversion
+          flavor: |
+            suffix=-alpine
+          labels: |
+            org.opencontainers.image.title=MyApp
+            org.opencontainers.image.description=A test application
+            maintainer=test@example.com
+
+      - name: Assert tags contain suffix
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "tags: $TAGS"
+          if ! echo "$TAGS" | grep -q "myorg/myimage:myversion-alpine"; then
+            echo "FAIL: tags does not contain 'myorg/myimage:myversion-alpine'"
+            exit 1
+          fi
+          echo "PASS: suffix applied correctly"
+
+      - name: Assert version contains suffix
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          echo "version: $VERSION"
+          if [ "$VERSION" != "myversion-alpine" ]; then
+            echo "FAIL: expected version 'myversion-alpine', got '$VERSION'"
+            exit 1
+          fi
+          echo "PASS: version=$VERSION"
+
+      - name: Assert custom labels are present
+        env:
+          LABELS: ${{ steps.meta.outputs.labels }}
+        run: |
+          echo "labels: $LABELS"
+          if ! echo "$LABELS" | grep -q "org.opencontainers.image.title=MyApp"; then
+            echo "FAIL: labels does not contain custom title"
+            exit 1
+          fi
+          if ! echo "$LABELS" | grep -q "org.opencontainers.image.description=A test application"; then
+            echo "FAIL: labels does not contain custom description"
+            exit 1
+          fi
+          if ! echo "$LABELS" | grep -q "maintainer=test@example.com"; then
+            echo "FAIL: labels does not contain maintainer"
+            exit 1
+          fi
+          echo "PASS: all custom labels present"
+
+      - name: Assert json contains custom labels
+        env:
+          JSON_OUT: ${{ steps.meta.outputs.json }}
+        run: |
+          echo "json: $JSON_OUT"
+          if ! echo "$JSON_OUT" | grep -q "MyApp"; then
+            echo "FAIL: json does not contain custom title 'MyApp'"
+            exit 1
+          fi
+          echo "PASS: json contains custom labels"

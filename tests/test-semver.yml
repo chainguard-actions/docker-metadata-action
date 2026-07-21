@@ -1,0 +1,58 @@
+name: Test semver tags with explicit value
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=semver,pattern={{version}},value=v1.2.3
+            type=semver,pattern={{major}}.{{minor}},value=v1.2.3
+            type=semver,pattern={{major}},value=v1.2.3
+
+      - name: Assert version is 1.2.3
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          echo "version: $VERSION"
+          if [ "$VERSION" != "1.2.3" ]; then
+            echo "FAIL: expected version '1.2.3', got '$VERSION'"
+            exit 1
+          fi
+          echo "PASS: version=$VERSION"
+
+      - name: Assert tags contain full semver
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "tags: $TAGS"
+          if ! echo "$TAGS" | grep -q "myorg/myimage:1.2.3"; then
+            echo "FAIL: tags does not contain 'myorg/myimage:1.2.3'"
+            exit 1
+          fi
+          if ! echo "$TAGS" | grep -q "myorg/myimage:1.2"; then
+            echo "FAIL: tags does not contain 'myorg/myimage:1.2'"
+            exit 1
+          fi
+          if ! echo "$TAGS" | grep -q "myorg/myimage:1"; then
+            echo "FAIL: tags does not contain 'myorg/myimage:1'"
+            exit 1
+          fi
+          echo "PASS: all semver tags present"
+
+      - name: Assert json contains expected tags
+        env:
+          JSON_OUT: ${{ steps.meta.outputs.json }}
+        run: |
+          echo "json: $JSON_OUT"
+          if ! echo "$JSON_OUT" | grep -q "1.2.3"; then
+            echo "FAIL: json does not contain '1.2.3'"
+            exit 1
+          fi
+          echo "PASS: json contains semver"

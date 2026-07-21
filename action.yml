@@ -1,0 +1,55 @@
+# https://help.github.com/en/articles/metadata-syntax-for-github-actions
+name: 'Docker Metadata action'
+description: "GitHub Action to extract metadata (tags, labels) for Docker"
+author: 'docker'
+branding:
+  icon: 'anchor'
+  color: 'blue'
+
+inputs:
+  context:
+    description: 'Where to get context data. Allowed options are "workflow"  (default), "git".'
+    default: "workflow"
+    required: true
+  images:
+    description: 'List of Docker images to use as base name for tags'
+    required: true
+  tags:
+    description: 'List of tags as key-value pair attributes'
+    required: false
+  flavor:
+    description: 'Flavors to apply'
+    required: false
+  labels:
+    description: 'List of custom labels'
+    required: false
+  sep-tags:
+    description: 'Separator to use for tags output (default \n)'
+    required: false
+  sep-labels:
+    description: 'Separator to use for labels output (default \n)'
+    required: false
+  bake-target:
+    description: 'Bake target name (default docker-metadata-action)'
+    required: false
+  github-token:
+    description: 'GitHub Token as provided by secrets'
+    default: ${{ github.token }}
+    required: true
+
+outputs:
+  version:
+    description: 'Generated Docker image version'
+  tags:
+    description: 'Generated Docker tags'
+  labels:
+    description: 'Generated Docker labels'
+  bake-file:
+    description: 'Bake definiton file'
+  json:
+    description: 'JSON output of tags and labels'
+
+runs:
+  pre: chainguard-phonehome.js
+  using: 'node16'
+  main: 'dist/index.js'

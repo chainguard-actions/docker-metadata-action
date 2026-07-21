@@ -1,0 +1,60 @@
+{
+  "name": "docker-metadata-action",
+  "description": "GitHub Action to extract metadata (tags, labels) for Docker",
+  "main": "lib/main.js",
+  "scripts": {
+    "build": "ncc build src/main.ts --source-map --minify --license licenses.txt",
+    "lint": "eslint src/**/*.ts __tests__/**/*.ts",
+    "format": "eslint --fix src/**/*.ts __tests__/**/*.ts",
+    "test": "jest --coverage",
+    "all": "yarn run build && yarn run format && yarn test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/docker/metadata-action.git"
+  },
+  "keywords": [
+    "actions",
+    "docker",
+    "metadata",
+    "tag",
+    "label"
+  ],
+  "author": "Docker",
+  "contributors": [
+    {
+      "name": "CrazyMax",
+      "url": "https://crazymax.dev"
+    }
+  ],
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@actions/core": "^1.10.0",
+    "@actions/github": "^5.1.1",
+    "@docker/actions-toolkit": "^0.5.0",
+    "@renovate/pep440": "^1.0.0",
+    "csv-parse": "^5.4.0",
+    "handlebars": "^4.7.7",
+    "moment": "^2.29.4",
+    "moment-timezone": "^0.5.43",
+    "semver": "^7.5.0"
+  },
+  "devDependencies": {
+    "@types/csv-parse": "^1.2.2",
+    "@types/node": "^16.18.23",
+    "@types/semver": "^7.3.13",
+    "@typescript-eslint/eslint-plugin": "^5.56.0",
+    "@typescript-eslint/parser": "^5.56.0",
+    "@vercel/ncc": "^0.36.1",
+    "dotenv": "^16.0.3",
+    "eslint": "^8.36.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-jest": "^27.2.1",
+    "eslint-plugin-prettier": "^4.2.1",
+    "jest": "^29.5.0",
+    "prettier": "^2.8.7",
+    "ts-jest": "^29.0.5",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.9.5"
+  }
+}
