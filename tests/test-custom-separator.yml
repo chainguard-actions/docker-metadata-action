@@ -1,0 +1,47 @@
+name: Test custom separator for tags and labels
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=raw,value=v1
+            type=raw,value=v2
+          sep-tags: ","
+          sep-labels: ","
+
+      - name: Assert tags are comma-separated
+        env:
+          ACTUAL: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "actual tags: $ACTUAL"
+          # With comma separator, both tags should appear on one line separated by comma
+          if ! echo "$ACTUAL" | grep -q "myorg/myimage:v1,myorg/myimage:v2"; then
+            echo "FAIL: expected comma-separated tags 'myorg/myimage:v1,myorg/myimage:v2'"
+            echo "Got: $ACTUAL"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert labels are comma-separated (no newlines between entries)
+        env:
+          ACTUAL: ${{ steps.meta.outputs.labels }}
+        run: |
+          echo "actual labels: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected labels to be non-empty"
+            exit 1
+          fi
+          # With comma separator, labels should contain commas between entries
+          if ! echo "$ACTUAL" | grep -q ","; then
+            echo "FAIL: expected comma-separated labels but no comma found"
+            exit 1
+          fi
+          echo "PASS"

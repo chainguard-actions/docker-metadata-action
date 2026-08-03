@@ -1,0 +1,68 @@
+name: Test multiple images
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: meta
+        uses: .
+        with:
+          images: |
+            myorg/myimage
+            ghcr.io/myorg/myimage
+          tags: |
+            type=raw,value=stable
+
+      - name: Assert tags contain first image
+        env:
+          ACTUAL: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "actual tags: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "myorg/myimage:stable"; then
+            echo "FAIL: expected tags to contain 'myorg/myimage:stable'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert tags contain second image (ghcr.io)
+        env:
+          ACTUAL: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "actual tags: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "ghcr.io/myorg/myimage:stable"; then
+            echo "FAIL: expected tags to contain 'ghcr.io/myorg/myimage:stable'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert json tags array has two entries
+        env:
+          ACTUAL: ${{ steps.meta.outputs.json }}
+        run: |
+          echo "actual json: $ACTUAL"
+          COUNT=$(echo "$ACTUAL" | python3 -c "import sys, json; d=json.load(sys.stdin); print(len(d['tags']))")
+          echo "tag count: $COUNT"
+          if [ "$COUNT" -ne 2 ]; then
+            echo "FAIL: expected 2 tags in json, got $COUNT"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert tag-names output contains just the tag without image prefix
+        env:
+          ACTUAL: ${{ steps.meta.outputs.tag-names }}
+        run: |
+          echo "actual tag-names: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "stable"; then
+            echo "FAIL: expected tag-names to contain 'stable'"
+            exit 1
+          fi
+          # tag-names should NOT contain the image base name
+          if echo "$ACTUAL" | grep -q "myorg/myimage:"; then
+            echo "FAIL: tag-names should not contain image base name with colon"
+            exit 1
+          fi
+          echo "PASS"

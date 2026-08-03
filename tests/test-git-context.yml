@@ -1,0 +1,56 @@
+name: Test git context mode
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - id: meta
+        uses: .
+        with:
+          context: git
+          images: myorg/myimage
+          tags: |
+            type=raw,value=git-context-test
+
+      - name: Assert version output is non-empty in git context
+        env:
+          ACTUAL: ${{ steps.meta.outputs.version }}
+        run: |
+          echo "actual version: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected version to be non-empty in git context"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert tags output contains image with tag in git context
+        env:
+          ACTUAL: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "actual tags: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "myorg/myimage:git-context-test"; then
+            echo "FAIL: expected tags to contain 'myorg/myimage:git-context-test'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert labels include git-related metadata
+        env:
+          ACTUAL: ${{ steps.meta.outputs.labels }}
+        run: |
+          echo "actual labels: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected labels to be non-empty in git context"
+            exit 1
+          fi
+          # In git context, revision label should be present
+          if ! echo "$ACTUAL" | grep -q "org.opencontainers.image.revision"; then
+            echo "FAIL: expected labels to contain git revision in git context"
+            exit 1
+          fi
+          echo "PASS"

@@ -1,0 +1,85 @@
+name: Test bake file outputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=raw,value=bake-test
+          bake-target: my-bake-target
+
+      - name: Assert bake-file-tags output is a valid file path
+        env:
+          ACTUAL: ${{ steps.meta.outputs.bake-file-tags }}
+        run: |
+          echo "actual bake-file-tags: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected bake-file-tags to be non-empty"
+            exit 1
+          fi
+          if [ ! -f "$ACTUAL" ]; then
+            echo "FAIL: bake-file-tags path '$ACTUAL' does not point to an existing file"
+            exit 1
+          fi
+          echo "PASS: bake-file-tags file exists at $ACTUAL"
+
+      - name: Assert bake-file-tags content is valid JSON with bake target
+        env:
+          ACTUAL: ${{ steps.meta.outputs.bake-file-tags }}
+        run: |
+          echo "bake-file-tags content:"
+          cat "$ACTUAL"
+          if ! python3 -c "import sys, json; d=json.load(open('$ACTUAL')); assert 'target' in d" 2>/dev/null; then
+            echo "FAIL: bake-file-tags is not valid JSON or missing 'target' key"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert bake-file-labels output is a valid file path
+        env:
+          ACTUAL: ${{ steps.meta.outputs.bake-file-labels }}
+        run: |
+          echo "actual bake-file-labels: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected bake-file-labels to be non-empty"
+            exit 1
+          fi
+          if [ ! -f "$ACTUAL" ]; then
+            echo "FAIL: bake-file-labels path '$ACTUAL' does not point to an existing file"
+            exit 1
+          fi
+          echo "PASS: bake-file-labels file exists at $ACTUAL"
+
+      - name: Assert bake-file output is a valid file path
+        env:
+          ACTUAL: ${{ steps.meta.outputs.bake-file }}
+        run: |
+          echo "actual bake-file: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected bake-file to be non-empty"
+            exit 1
+          fi
+          if [ ! -f "$ACTUAL" ]; then
+            echo "FAIL: bake-file path '$ACTUAL' does not point to an existing file"
+            exit 1
+          fi
+          echo "PASS: bake-file exists at $ACTUAL"
+
+      - name: Assert bake-file content references bake target name
+        env:
+          BAKE_FILE: ${{ steps.meta.outputs.bake-file }}
+        run: |
+          echo "bake-file content:"
+          cat "$BAKE_FILE"
+          if ! grep -q "my-bake-target" "$BAKE_FILE"; then
+            echo "FAIL: bake-file does not reference bake target 'my-bake-target'"
+            exit 1
+          fi
+          echo "PASS"

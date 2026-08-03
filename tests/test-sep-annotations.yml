@@ -1,0 +1,48 @@
+name: Test sep-annotations input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=raw,value=latest
+          labels: |
+            org.opencontainers.image.title=MyImage
+          annotations: |
+            org.opencontainers.image.title=MyImage
+            org.opencontainers.image.description=A test image
+          sep-annotations: ","
+      - name: Assert annotations output uses comma separator
+        env:
+          ACTUAL: ${{ steps.meta.outputs.annotations }}
+        run: |
+          echo "actual annotations: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: annotations output is empty"
+            exit 1
+          fi
+          # With sep-annotations=",", multiple annotations should be comma-separated
+          # Check that the output contains a comma (separator was applied)
+          if echo "$ACTUAL" | grep -q ","; then
+            echo "PASS: annotations output contains comma separator"
+          else
+            echo "FAIL: expected comma separator in annotations output"
+            echo "annotations: $ACTUAL"
+            exit 1
+          fi
+      - name: Assert version output is set
+        env:
+          ACTUAL: ${{ steps.meta.outputs.version }}
+        run: |
+          echo "actual version: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: version output is empty"
+            exit 1
+          fi
+          echo "PASS: version=$ACTUAL"

@@ -1,0 +1,76 @@
+name: Test custom labels and annotations
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=raw,value=test
+          labels: |
+            org.opencontainers.image.title=My Custom Title
+            org.opencontainers.image.description=My custom description
+            custom.label=custom-value
+          annotations: |
+            org.opencontainers.image.title=My Annotation Title
+
+      - name: Assert labels contain custom title
+        env:
+          ACTUAL: ${{ steps.meta.outputs.labels }}
+        run: |
+          echo "actual labels: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "org.opencontainers.image.title=My Custom Title"; then
+            echo "FAIL: expected labels to contain custom title"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert labels contain custom description
+        env:
+          ACTUAL: ${{ steps.meta.outputs.labels }}
+        run: |
+          echo "actual labels: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "org.opencontainers.image.description=My custom description"; then
+            echo "FAIL: expected labels to contain custom description"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert labels contain custom label
+        env:
+          ACTUAL: ${{ steps.meta.outputs.labels }}
+        run: |
+          echo "actual labels: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "custom.label=custom-value"; then
+            echo "FAIL: expected labels to contain custom.label=custom-value"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert annotations output is non-empty
+        env:
+          ACTUAL: ${{ steps.meta.outputs.annotations }}
+        run: |
+          echo "actual annotations: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected annotations to be non-empty"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert annotations contain custom title
+        env:
+          ACTUAL: ${{ steps.meta.outputs.annotations }}
+        run: |
+          echo "actual annotations: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "org.opencontainers.image.title=My Annotation Title"; then
+            echo "FAIL: expected annotations to contain custom title"
+            exit 1
+          fi
+          echo "PASS"
