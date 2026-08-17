@@ -1,56 +1,72 @@
-name: Test semver tag push
+name: Test semver tag with explicit value
 on:
   workflow_dispatch:
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - id: meta
         uses: .
         with:
           images: myorg/myimage
           tags: |
-            type=raw,value=1.2.3
-            type=raw,value=1.2
-            type=raw,value=1
-      - name: Assert version output equals semver
+            type=semver,pattern={{version}},value=v1.2.3
+            type=semver,pattern={{major}}.{{minor}},value=v1.2.3
+            type=semver,pattern={{major}},value=v1.2.3
+
+      - name: Assert version is semver without v prefix
         env:
-          VERSION: ${{ steps.meta.outputs.version }}
+          ACTUAL: ${{ steps.meta.outputs.version }}
         run: |
-          echo "version: $VERSION"
-          if [ "$VERSION" != "1.2.3" ]; then
-            echo "FAIL: expected version '1.2.3', got '$VERSION'"
+          echo "actual version: $ACTUAL"
+          if [ "$ACTUAL" != "1.2.3" ]; then
+            echo "FAIL: expected version '1.2.3', got '$ACTUAL'"
             exit 1
           fi
           echo "PASS"
+
       - name: Assert tags contain full semver
         env:
-          TAGS: ${{ steps.meta.outputs.tags }}
+          ACTUAL: ${{ steps.meta.outputs.tags }}
         run: |
-          echo "tags: $TAGS"
-          if ! echo "$TAGS" | grep -q "myorg/myimage:1.2.3"; then
-            echo "FAIL: tags should contain 'myorg/myimage:1.2.3'"
+          echo "actual tags: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "myorg/myimage:1.2.3"; then
+            echo "FAIL: expected tags to contain 'myorg/myimage:1.2.3'"
             exit 1
           fi
           echo "PASS"
+
       - name: Assert tags contain major.minor
         env:
-          TAGS: ${{ steps.meta.outputs.tags }}
+          ACTUAL: ${{ steps.meta.outputs.tags }}
         run: |
-          echo "tags: $TAGS"
-          if ! echo "$TAGS" | grep -q "myorg/myimage:1.2"; then
-            echo "FAIL: tags should contain 'myorg/myimage:1.2'"
+          echo "actual tags: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "myorg/myimage:1.2"; then
+            echo "FAIL: expected tags to contain 'myorg/myimage:1.2'"
             exit 1
           fi
           echo "PASS"
+
       - name: Assert tags contain major only
         env:
-          TAGS: ${{ steps.meta.outputs.tags }}
+          ACTUAL: ${{ steps.meta.outputs.tags }}
         run: |
-          echo "tags: $TAGS"
-          if ! echo "$TAGS" | grep -q "myorg/myimage:1"; then
-            echo "FAIL: tags should contain 'myorg/myimage:1'"
+          echo "actual tags: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "myorg/myimage:1"; then
+            echo "FAIL: expected tags to contain 'myorg/myimage:1'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert json contains tags array
+        env:
+          ACTUAL: ${{ steps.meta.outputs.json }}
+        run: |
+          echo "actual json: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q '"tags"'; then
+            echo "FAIL: expected json to contain 'tags' key"
             exit 1
           fi
           echo "PASS"

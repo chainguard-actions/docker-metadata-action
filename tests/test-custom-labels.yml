@@ -7,8 +7,10 @@ jobs:
     env:
       GITHUB_REF: refs/heads/main
       GITHUB_EVENT_NAME: push
+      GITHUB_SHA: abc1234567890abcdef1234567890abcdef12345
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - id: meta
         uses: .
         with:
@@ -16,49 +18,59 @@ jobs:
           tags: |
             type=ref,event=branch
           labels: |
-            org.opencontainers.image.title=MyApp
-            org.opencontainers.image.description=My custom description
-            custom.label=custom-value
+            org.opencontainers.image.vendor=MyCompany
+            custom.label=myvalue
           annotations: |
-            org.opencontainers.image.title=MyApp
-            custom.annotation=annotation-value
-      - name: Assert labels contain custom label
+            org.opencontainers.image.description=My custom description
+
+      - name: Assert custom label is present
         env:
           LABELS: ${{ steps.meta.outputs.labels }}
         run: |
           echo "labels: $LABELS"
-          if ! echo "$LABELS" | grep -q "custom.label=custom-value"; then
-            echo "FAIL: labels should contain 'custom.label=custom-value'"
+          if ! echo "$LABELS" | grep -q "org.opencontainers.image.vendor=MyCompany"; then
+            echo "FAIL: custom vendor label not found in labels output"
             exit 1
           fi
-          echo "PASS"
-      - name: Assert labels contain custom description
+          echo "PASS: vendor label present"
+
+      - name: Assert custom label value is present
         env:
           LABELS: ${{ steps.meta.outputs.labels }}
         run: |
           echo "labels: $LABELS"
-          if ! echo "$LABELS" | grep -q "org.opencontainers.image.description=My custom description"; then
-            echo "FAIL: labels should contain custom description"
+          if ! echo "$LABELS" | grep -q "custom.label=myvalue"; then
+            echo "FAIL: custom.label=myvalue not found in labels output"
             exit 1
           fi
-          echo "PASS"
-      - name: Assert annotations are not empty
+          echo "PASS: custom label present"
+
+      - name: Assert annotations are set
         env:
           ANNOTATIONS: ${{ steps.meta.outputs.annotations }}
         run: |
           echo "annotations: $ANNOTATIONS"
           if [ -z "$ANNOTATIONS" ]; then
-            echo "FAIL: annotations output should not be empty"
+            echo "FAIL: annotations output is empty"
             exit 1
           fi
-          echo "PASS"
-      - name: Assert annotations contain custom annotation
+          if ! echo "$ANNOTATIONS" | grep -q "My custom description"; then
+            echo "FAIL: custom annotation description not found"
+            exit 1
+          fi
+          echo "PASS: annotations present"
+
+      - name: Assert bake-file output is set
         env:
-          ANNOTATIONS: ${{ steps.meta.outputs.annotations }}
+          BAKE_FILE: ${{ steps.meta.outputs.bake-file }}
         run: |
-          echo "annotations: $ANNOTATIONS"
-          if ! echo "$ANNOTATIONS" | grep -q "custom.annotation=annotation-value"; then
-            echo "FAIL: annotations should contain 'custom.annotation=annotation-value'"
+          echo "bake-file: $BAKE_FILE"
+          if [ -z "$BAKE_FILE" ]; then
+            echo "FAIL: bake-file output is empty"
             exit 1
           fi
-          echo "PASS"
+          if [ ! -f "$BAKE_FILE" ]; then
+            echo "FAIL: bake-file path '$BAKE_FILE' does not point to an existing file"
+            exit 1
+          fi
+          echo "PASS: bake-file exists at $BAKE_FILE"

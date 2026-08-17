@@ -1,0 +1,59 @@
+name: Test basic raw tag
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=raw,value=latest
+
+      - name: Assert version output
+        env:
+          ACTUAL: ${{ steps.meta.outputs.version }}
+        run: |
+          echo "actual version: $ACTUAL"
+          if [ "$ACTUAL" != "latest" ]; then
+            echo "FAIL: expected version 'latest', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert tags output contains image and tag
+        env:
+          ACTUAL: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "actual tags: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "myorg/myimage:latest"; then
+            echo "FAIL: expected tags to contain 'myorg/myimage:latest'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert json output is non-empty
+        env:
+          ACTUAL: ${{ steps.meta.outputs.json }}
+        run: |
+          echo "actual json: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected non-empty json output"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert labels output contains standard labels
+        env:
+          ACTUAL: ${{ steps.meta.outputs.labels }}
+        run: |
+          echo "actual labels: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "org.opencontainers.image"; then
+            echo "FAIL: expected labels to contain OCI labels"
+            exit 1
+          fi
+          echo "PASS"

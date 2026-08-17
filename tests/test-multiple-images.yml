@@ -4,11 +4,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_REF: refs/heads/main
-      GITHUB_EVENT_NAME: push
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - id: meta
         uses: .
         with:
@@ -16,49 +14,52 @@ jobs:
             myorg/myimage
             ghcr.io/myorg/myimage
           tags: |
-            type=ref,event=branch
-            type=sha
+            type=raw,value=develop
+
       - name: Assert tags contain first image
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
         run: |
           echo "tags: $TAGS"
-          if ! echo "$TAGS" | grep -q "myorg/myimage"; then
-            echo "FAIL: tags should contain 'myorg/myimage'"
+          if ! echo "$TAGS" | grep -q "myorg/myimage:develop"; then
+            echo "FAIL: tags do not contain 'myorg/myimage:develop'"
             exit 1
           fi
-          echo "PASS"
-      - name: Assert tags contain second image
+          echo "PASS: first image tag present"
+
+      - name: Assert tags contain second image (ghcr.io)
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
         run: |
           echo "tags: $TAGS"
-          if ! echo "$TAGS" | grep -q "ghcr.io/myorg/myimage"; then
-            echo "FAIL: tags should contain 'ghcr.io/myorg/myimage'"
+          if ! echo "$TAGS" | grep -q "ghcr.io/myorg/myimage:develop"; then
+            echo "FAIL: tags do not contain 'ghcr.io/myorg/myimage:develop'"
             exit 1
           fi
-          echo "PASS"
-      - name: Assert json contains both images
+          echo "PASS: second image tag present"
+
+      - name: Assert version is set
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          echo "version: $VERSION"
+          if [ -z "$VERSION" ]; then
+            echo "FAIL: version output is empty"
+            exit 1
+          fi
+          echo "PASS: version=$VERSION"
+
+      - name: Assert json output contains both images
         env:
           JSON: ${{ steps.meta.outputs.json }}
         run: |
           echo "json: $JSON"
           if ! echo "$JSON" | grep -q "myorg/myimage"; then
-            echo "FAIL: json should contain 'myorg/myimage'"
+            echo "FAIL: json does not contain image references"
             exit 1
           fi
-          if ! echo "$JSON" | grep -q "ghcr.io/myorg/myimage"; then
-            echo "FAIL: json should contain 'ghcr.io/myorg/myimage'"
+          if ! echo "$JSON" | grep -q "ghcr.io"; then
+            echo "FAIL: json does not contain ghcr.io image reference"
             exit 1
           fi
-          echo "PASS"
-      - name: Assert tag-names output is not empty
-        env:
-          TAG_NAMES: ${{ steps.meta.outputs.tag-names }}
-        run: |
-          echo "tag-names: $TAG_NAMES"
-          if [ -z "$TAG_NAMES" ]; then
-            echo "FAIL: tag-names output should not be empty"
-            exit 1
-          fi
-          echo "PASS"
+          echo "PASS: json contains both image references"

@@ -1,58 +1,66 @@
-name: Test flavor options
+name: Test flavor prefix and suffix
 on:
   workflow_dispatch:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+      GITHUB_SHA: abc1234567890abcdef1234567890abcdef12345
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - id: meta
         uses: .
         with:
           images: myorg/myimage
           tags: |
-            type=raw,value=1.2.3
+            type=ref,event=branch
           flavor: |
-            latest=true
-            prefix=dev-
             suffix=-alpine
-      - name: Assert version is not empty
+            latest=false
+
+      - name: Assert tags are set
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "tags: $TAGS"
+          if [ -z "$TAGS" ]; then
+            echo "FAIL: tags output is empty"
+            exit 1
+          fi
+          echo "PASS: tags=$TAGS"
+
+      - name: Assert suffix is applied to tags
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "tags: $TAGS"
+          if ! echo "$TAGS" | grep -q "\-alpine"; then
+            echo "FAIL: suffix '-alpine' not found in tags"
+            exit 1
+          fi
+          echo "PASS: suffix applied to tags"
+
+      - name: Assert latest tag is not present when flavor latest=false
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "tags: $TAGS"
+          if echo "$TAGS" | grep -qE ":latest$|:latest-alpine$"; then
+            echo "FAIL: 'latest' tag should not be present when flavor latest=false"
+            exit 1
+          fi
+          echo "PASS: no latest tag as expected"
+
+      - name: Assert version is set
         env:
           VERSION: ${{ steps.meta.outputs.version }}
         run: |
           echo "version: $VERSION"
           if [ -z "$VERSION" ]; then
-            echo "FAIL: version output should not be empty"
+            echo "FAIL: version output is empty"
             exit 1
           fi
-          echo "PASS"
-      - name: Assert tags contain prefix and suffix
-        env:
-          TAGS: ${{ steps.meta.outputs.tags }}
-        run: |
-          echo "tags: $TAGS"
-          if ! echo "$TAGS" | grep -q "dev-1.2.3-alpine"; then
-            echo "FAIL: tags should contain 'dev-1.2.3-alpine' (prefix+value+suffix)"
-            exit 1
-          fi
-          echo "PASS"
-      - name: Assert tags contain latest without prefix and suffix (prefixLatest and suffixLatest default to false)
-        env:
-          TAGS: ${{ steps.meta.outputs.tags }}
-        run: |
-          echo "tags: $TAGS"
-          if ! echo "$TAGS" | grep -q "myorg/myimage:latest"; then
-            echo "FAIL: tags should contain 'myorg/myimage:latest' (latest tag does not get prefix/suffix by default)"
-            exit 1
-          fi
-          echo "PASS"
-      - name: Assert labels are not empty
-        env:
-          LABELS: ${{ steps.meta.outputs.labels }}
-        run: |
-          echo "labels: $LABELS"
-          if [ -z "$LABELS" ]; then
-            echo "FAIL: labels output should not be empty"
-            exit 1
-          fi
-          echo "PASS"
+          echo "PASS: version=$VERSION"

@@ -1,0 +1,64 @@
+name: Test custom labels and annotations
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: meta
+        uses: .
+        with:
+          images: myorg/myimage
+          tags: |
+            type=raw,value=test
+          labels: |
+            maintainer=testuser
+            com.example.custom=myvalue
+          annotations: |
+            com.example.annotation=annotationvalue
+
+      - name: Assert custom label maintainer present
+        env:
+          ACTUAL: ${{ steps.meta.outputs.labels }}
+        run: |
+          echo "actual labels: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "maintainer=testuser"; then
+            echo "FAIL: expected labels to contain 'maintainer=testuser'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert custom label com.example.custom present
+        env:
+          ACTUAL: ${{ steps.meta.outputs.labels }}
+        run: |
+          echo "actual labels: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "com.example.custom=myvalue"; then
+            echo "FAIL: expected labels to contain 'com.example.custom=myvalue'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert annotations output contains custom annotation
+        env:
+          ACTUAL: ${{ steps.meta.outputs.annotations }}
+        run: |
+          echo "actual annotations: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "com.example.annotation=annotationvalue"; then
+            echo "FAIL: expected annotations to contain 'com.example.annotation=annotationvalue'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert bake-file output is non-empty
+        env:
+          ACTUAL: ${{ steps.meta.outputs.bake-file }}
+        run: |
+          echo "actual bake-file: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected non-empty bake-file output"
+            exit 1
+          fi
+          echo "PASS"

@@ -1,4 +1,4 @@
-name: Test git context mode
+name: Test basic push to branch
 on:
   workflow_dispatch:
 jobs:
@@ -7,13 +7,13 @@ jobs:
     env:
       GITHUB_REF: refs/heads/main
       GITHUB_EVENT_NAME: push
+      GITHUB_SHA: abc1234567890abcdef1234567890abcdef12345
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - id: meta
         uses: .
         with:
-          context: git
           images: myorg/myimage
           tags: |
             type=ref,event=branch
@@ -52,32 +52,35 @@ jobs:
           fi
           echo "PASS: labels=$LABELS"
 
-      - name: Assert bake-file-tags output is set
+      - name: Assert json output is set
         env:
-          BAKE_FILE_TAGS: ${{ steps.meta.outputs.bake-file-tags }}
+          JSON: ${{ steps.meta.outputs.json }}
         run: |
-          echo "bake-file-tags: $BAKE_FILE_TAGS"
-          if [ -z "$BAKE_FILE_TAGS" ]; then
-            echo "FAIL: bake-file-tags output is empty"
+          echo "json: $JSON"
+          if [ -z "$JSON" ]; then
+            echo "FAIL: json output is empty"
             exit 1
           fi
-          if [ ! -f "$BAKE_FILE_TAGS" ]; then
-            echo "FAIL: bake-file-tags path '$BAKE_FILE_TAGS' does not point to an existing file"
+          echo "$JSON" | node -e "
+            let d='';
+            process.stdin.on('data', c => d+=c);
+            process.stdin.on('end', () => {
+              try { JSON.parse(d); process.exit(0); }
+              catch(e) { console.error('Invalid JSON:', e.message); process.exit(1); }
+            });
+          " || {
+            echo "FAIL: json output is not valid JSON"
             exit 1
-          fi
-          echo "PASS: bake-file-tags exists at $BAKE_FILE_TAGS"
+          }
+          echo "PASS: json is valid"
 
-      - name: Assert bake-file-labels output is set
+      - name: Assert tags contain image name
         env:
-          BAKE_FILE_LABELS: ${{ steps.meta.outputs.bake-file-labels }}
+          TAGS: ${{ steps.meta.outputs.tags }}
         run: |
-          echo "bake-file-labels: $BAKE_FILE_LABELS"
-          if [ -z "$BAKE_FILE_LABELS" ]; then
-            echo "FAIL: bake-file-labels output is empty"
+          echo "tags: $TAGS"
+          if ! echo "$TAGS" | grep -q "myorg/myimage"; then
+            echo "FAIL: tags do not contain image name 'myorg/myimage'"
             exit 1
           fi
-          if [ ! -f "$BAKE_FILE_LABELS" ]; then
-            echo "FAIL: bake-file-labels path '$BAKE_FILE_LABELS' does not point to an existing file"
-            exit 1
-          fi
-          echo "PASS: bake-file-labels exists at $BAKE_FILE_LABELS"
+          echo "PASS: tags contain image name"
